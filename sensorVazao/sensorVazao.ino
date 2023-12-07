@@ -33,23 +33,14 @@ char daysOfTheWeek[7][12] = {"domingo", "segunda", "terca", "quarta", "quinta", 
 //-----------------------------------//*/
 
 //-----------------------------------/Sensor Vazao/*
-//#include "EEPROM.h" //Olhar exemplo no arduino.cc
-//int addr = 0;
-//#define EEPROM_SIZE 1
 
 const byte interruptPin = 15;
 
-//int pulso;
-//int arquivandoPulsoAcumulado = 0;
-uint32_t pulsoAcumulado; //= int_fast32_t(EEPROM.readInt(addr));
-
-float tempoSegundos = 60*20;//1/6;
-
-//float vazaoLitro;
+uint32_t pulsoAcumulado;
+float tempoSegundos = 60*20;
 float vazaoLitroAcumulada;
 
 void IRAM_ATTR isr() { // funçao chamada cada vez que o sensor de fluxo mandar um pulso
-    //pulso++;
     pulsoAcumulado++;
 }
 //-----------------------------------//*/
@@ -168,20 +159,6 @@ void setup() {
 
 //-----------------------------------/Sensor Vazao/*
   attachInterrupt(digitalPinToInterrupt(interruptPin), isr, RISING);
-  
-/*  Serial.println("start...");
-  if (!EEPROM.begin(EEPROM_SIZE))
-  {
-    Serial.println("failed to initialise EEPROM"); delay(1000000);
-  }
-  Serial.println(" bytes read from Flash . Values are:");
-  for (int i = 0; i < EEPROM_SIZE; i++)
-  {
-    Serial.print(byte(EEPROM.read(i))); Serial.print(" ");
-  }
-  Serial.println();
-  Serial.println("writing random n. in memory");*/
-
 //-----------------------------------//*/
 
 //-----------------------------------/SD/*
@@ -226,13 +203,12 @@ void setup() {
     Serial.println("File already exists");  
   }
 
-  pulsoAcumulado = uint32_t(file2.readString().toDouble());//readFile(SD, "/DadosLeitura.csv");
+  pulsoAcumulado = uint32_t(file2.readString().toDouble());
   Serial.println(pulsoAcumulado);
 
   //(!)Criar a cópia do código de cima e instanciar uma linha com 0
   file.close();
   file2.close();
-  //logSDCard();
 //-----------------------------------//*/
 
 //-----------------------------------//DHT
@@ -251,14 +227,10 @@ void loop() {
 //-----------------------------------/RTC/*
   medirTempUmid();
   printarInformacoes();
-  //pulso = 0; //zerando o pulso
 //-----------------------------------//*/
 
 //-----------------------------------/Sensor Vazao/*
   calcularVazao();  
-  //EEPROM.writeInt(addr, pulsoAcumulado);
-  //EEPROM.commit();
-  //Serial.print(EEPROM.readInt(addr));
 //-----------------------------------//*/
 
 //-----------------------------------/SD/*
@@ -309,11 +281,6 @@ void printarInformacoes() {
     Serial.print(" %\",");
     Serial.println();
 
-    //Serial.print("  \"vazaoLitroMediaPorSegundo\" : \"");
-    //Serial.print(vazaoLitro);
-    //Serial.print("\",");
-    //Serial.println();
-
     Serial.print("  \"pulsocumulado\" : \"");
     Serial.print(String(pulsoAcumulado));
     Serial.print("\",");
@@ -330,7 +297,6 @@ void printarInformacoes() {
 
 //-----------------------------------/Sensor Vazao/*
 void calcularVazao() {
-  //vazaoLitro = ((pulso*2.25)/1000)/tempoSegundos;
   vazaoLitroAcumulada = (pulsoAcumulado/340);
 }
 //-----------------------------------//*/
@@ -339,10 +305,11 @@ void calcularVazao() {
 // Write the sensor readings on the SD card
 void logSDCard() {
   DateTime now = rtc.now();
-  dataMessage = String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+";"+
-                String(rtc.now().hour())+":"+String(rtc.now().minute())+";"+String(daysOfTheWeek[rtc.now().dayOfTheWeek()])+";"+
-                //String(rtc.getTemperature())+";"+//String(vazaoLitro)+";"+
-                String(event.temperature)+";"+String(event.relative_humidity)+";"+
+  dataMessage = String(rtc.now().day())+"/"+ String(rtc.now().month())+"/"+String(rtc.now().year())+";"+
+                String(rtc.now().hour())+":"+String(rtc.now().minute())+";"+
+                String(daysOfTheWeek[rtc.now().dayOfTheWeek()])+";"+
+                String(rtc.getTemperature())+";"+
+                String(event.relative_humidity)+";"+
                 String(vazaoLitroAcumulada)+";"+"\r\n";
   dataMessage2 = String(pulsoAcumulado);
   Serial.print("Save data: ");
@@ -430,18 +397,18 @@ void publicarNoTopico() {
   reconnect();
   //String mac = String(WiFi.macAddress()).c_str();
   client.publish(topicoClienteID, String(mqtt_clientId).c_str(), true);
-  //client.publish(topicoTemperatura, String(String(rtc.getTemperature())).c_str(), true);
+  //client.publish(topicoTemperatura, String(event.temperature).c_str(), true);
   client.publish(topicoTemperatura, String(rtc.getTemperature()).c_str(), true);
   client.publish(topicoUmidade, String(event.relative_humidity).c_str(), true);
   client.publish(topicoDataHora, String(String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+" "+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str(), true);
   client.publish(topicoDiaSemana, String(String(daysOfTheWeek[rtc.now().dayOfTheWeek()])).c_str(), true);
-  //client.publish(topicoVazaoLitro, String(vazaoLitro).c_str(), true);
   client.publish(topicoVazaoLitroAcumulada, String(vazaoLitroAcumulada).c_str(), true);  
   
   String txClienteID      = String(mqtt_clientId).c_str();
+  //String txTemperatura    = String(event.temperature).c_str();
   String txTemperatura    = String(rtc.getTemperature()).c_str();
   String txUmidade        = String(event.relative_humidity).c_str();
-  String txDataHora       = String(String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+" "+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str();
+  String txDataHora       = String(String(rtc.now().day())+"-"+String(rtc.now().month())+"-"+String(rtc.now().year())+"T"+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str();
   String txDiaSemana      = String(String(daysOfTheWeek[rtc.now().dayOfTheWeek()])).c_str();
   String txVazaoAcumulada = String(vazaoLitroAcumulada).c_str();
   String txPontoVirgula   = ";";
