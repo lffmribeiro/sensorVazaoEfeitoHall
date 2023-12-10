@@ -424,6 +424,6 @@ void publicarNoTopico() {
       txPontoVirgula+
       txDiaSemana+
       txPontoVirgula+
-      txVazaoAcumulada).c_str(), true);
+      txVazaoAcumulada).c_str(), false);
 }
 //-----------------------------------//*/
