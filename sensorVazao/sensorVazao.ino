@@ -56,6 +56,9 @@ DHT_Unified dht(DHTPIN, DHTTYPE);
 
 sensor_t sensor;
 sensors_event_t event;
+
+String tempDHT;
+String umidDHT;
 //-----------------------------------//*/
 
 //-----------------------------------/MQTT/*
@@ -211,11 +214,10 @@ void setup() {
   file2.close();
 //-----------------------------------//*/
 
-//-----------------------------------//DHT
+//-----------------------------------//DHT/*
   dht.begin();
   dht.temperature().getSensor(&sensor);
   dht.humidity().getSensor(&sensor);
-  dht.temperature().getEvent(&event);
 //-----------------------------------//*/
 
 //-----------------------------------/MQTT/*
@@ -224,8 +226,11 @@ void setup() {
 //-----------------------------------//*/
 }
 void loop() {
-//-----------------------------------/RTC/*
+//-----------------------------------//DHT/*
   medirTempUmid();
+//-----------------------------------//*/
+
+//-----------------------------------/TODOS/*
   printarInformacoes();
 //-----------------------------------//*/
 
@@ -241,7 +246,7 @@ void loop() {
   publicarNoTopico();
 //-----------------------------------//
 }
-//-----------------------------------/RTC/*
+//-----------------------------------/TODOS/*
 void printarInformacoes() {
     DateTime now = rtc.now();
 
@@ -271,7 +276,8 @@ void printarInformacoes() {
     Serial.println();
 
     Serial.print("  \"temperatura\" : \"");
-    Serial.print(rtc.getTemperature());
+    Serial.print(tempDHT);
+    //Serial.print(rtc.getTemperature());
     Serial.print(" C");
     Serial.print("\",");
     Serial.println();
@@ -308,6 +314,7 @@ void logSDCard() {
   dataMessage = String(rtc.now().day())+"/"+ String(rtc.now().month())+"/"+String(rtc.now().year())+";"+
                 String(rtc.now().hour())+":"+String(rtc.now().minute())+";"+
                 String(daysOfTheWeek[rtc.now().dayOfTheWeek()])+";"+
+                //String(event.temperature)+";"+
                 String(rtc.getTemperature())+";"+
                 String(event.relative_humidity)+";"+
                 String(vazaoLitroAcumulada)+";"+"\r\n";
@@ -371,6 +378,7 @@ void appendFile(fs::FS &fs, const char * path, const char * message) {
 
 //-----------------------------------//DHT
 void medirTempUmid() {
+  dht.temperature().getEvent(&event);
   if (isnan(event.temperature)) {
     Serial.println(F("Error reading temperature!"));
   }
@@ -378,8 +386,9 @@ void medirTempUmid() {
     Serial.print(F("Temperature: "));
     Serial.print(event.temperature);
     Serial.println(F("°C"));
+    tempDHT = String(event.temperature);
   }
-  // Get humidity event and print its value.
+
   dht.humidity().getEvent(&event);
   if (isnan(event.relative_humidity)) {
     Serial.println(F("Error reading humidity!"));
@@ -388,6 +397,7 @@ void medirTempUmid() {
     Serial.print(F("Humidity: "));
     Serial.print(event.relative_humidity);
     Serial.println(F("%"));
+    umidDHT = String(event.relative_humidity);
   }
 }
 //-----------------------------------//*/
@@ -397,16 +407,16 @@ void publicarNoTopico() {
   reconnect();
   //String mac = String(WiFi.macAddress()).c_str();
   client.publish(topicoClienteID, String(mqtt_clientId).c_str(), true);
-  //client.publish(topicoTemperatura, String(event.temperature).c_str(), true);
-  client.publish(topicoTemperatura, String(rtc.getTemperature()).c_str(), true);
+  client.publish(topicoTemperatura, String(tempDHT).c_str(), true);
+  //client.publish(topicoTemperatura, String(rtc.getTemperature()).c_str(), true);
   client.publish(topicoUmidade, String(event.relative_humidity).c_str(), true);
   client.publish(topicoDataHora, String(String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+" "+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str(), true);
   client.publish(topicoDiaSemana, String(String(daysOfTheWeek[rtc.now().dayOfTheWeek()])).c_str(), true);
   client.publish(topicoVazaoLitroAcumulada, String(vazaoLitroAcumulada).c_str(), true);  
   
   String txClienteID      = String(mqtt_clientId).c_str();
-  //String txTemperatura    = String(event.temperature).c_str();
-  String txTemperatura    = String(rtc.getTemperature()).c_str();
+  String txTemperatura    = String(tempDHT).c_str();
+  //String txTemperatura    = String(rtc.getTemperature()).c_str();
   String txUmidade        = String(event.relative_humidity).c_str();
   String txDataHora       = String(String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+" "+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str();
   String txDiaSemana      = String(String(daysOfTheWeek[rtc.now().dayOfTheWeek()])).c_str();
