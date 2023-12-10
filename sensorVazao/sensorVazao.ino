@@ -408,7 +408,7 @@ void publicarNoTopico() {
   //String txTemperatura    = String(event.temperature).c_str();
   String txTemperatura    = String(rtc.getTemperature()).c_str();
   String txUmidade        = String(event.relative_humidity).c_str();
-  String txDataHora       = String(String(rtc.now().day())+"-"+String(rtc.now().month())+"-"+String(rtc.now().year())+"T"+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str();
+  String txDataHora       = String(String(rtc.now().day())+"/"+String(rtc.now().month())+"/"+String(rtc.now().year())+" "+String(rtc.now().hour())+":"+String(rtc.now().minute())+":"+String(rtc.now().second())).c_str();
   String txDiaSemana      = String(String(daysOfTheWeek[rtc.now().dayOfTheWeek()])).c_str();
   String txVazaoAcumulada = String(vazaoLitroAcumulada).c_str();
   String txPontoVirgula   = ";";
